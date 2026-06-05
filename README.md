@@ -1,80 +1,149 @@
-# 🛡️ Laboratorio de Ataques de Capa 2 (L2 Security)
+# 🛡️ CDP DoS Attack — Seguridad de Redes
 
-**Autor:** Sael Germán Garcia  
-**Matrícula:** 2025-0725  
-**Asignatura:** Seguridad de Redes  
+<div align="center">
 
-Este repositorio contiene una suite de scripts desarrollados en Python utilizando la librería `scapy`. El objetivo principal es demostrar empíricamente las vulnerabilidades inherentes a los protocolos de control de la Capa de Enlace de Datos (Capa 2 del modelo OSI) y documentar los mecanismos de mitigación (Hardening) en infraestructuras Cisco IOS.
+![Python](https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge&logo=python)
+![Scapy](https://img.shields.io/badge/Scapy-Latest-green?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Linux-orange?style=for-the-badge&logo=linux)
+![License](https://img.shields.io/badge/Uso-Educativo-red?style=for-the-badge)
 
----
+**Sael Germán García** | Matrícula: `2025-0725`  
+Asignatura: Seguridad de Redes | Profesor: Jonathan Rondón  
+Instituto Tecnológico de las Américas — ITLA | 2026
 
-## 🎥 Evidencia Operacional (Video Demostraciones)
-
-Todos los ataques descritos en este repositorio, junto con su respectiva prueba de concepto (PoC), verificación de impacto en los equipos Cisco y aplicación de contramedidas, se encuentran documentados en la siguiente lista de reproducción:
-
-▶️ **[Ver Playlist Completa del Laboratorio en YouTube](https://youtube.com/playlist?list=PLV_dKVnYXf6dpmk3j8uXPHAZdbrkCQGAY&si=d9Hr6pnByXof9LZF)**
-
----
-
-## 🏗️ Topología Unificada del Entorno
-
-Los scripts fueron diseñados para operar sobre un entorno virtualizado estructurado de la siguiente manera:
-* **VLAN 10 (Usuarios):** Segmento de pruebas de usuarios legítimos (10.7.25.0/24).
-* **VLAN 20 (Servidores):** Segmento de servicios locales (10.7.20.0/24).
-* **VLAN 99 (Gestión):** VLAN nativa y de administración.
-* **Nodo Atacante:** Máquina Linux (Ubuntu) equipada con Python 3 y Scapy.
+</div>
 
 ---
 
-## 💻 Suite de Scripts de Ataque
+## 📋 Descripción del Ataque
 
-### 1. CDP DoS Attack (`cdp_dos.py`)
-Inunda la tabla de memoria del protocolo Cisco Discovery Protocol (CDP) mediante la inyección masiva de paquetes TLV sintetizados con direcciones MAC y nombres de dispositivos falsificados.
-* **Ejecución:** `sudo python3 cdp_dos.py 1000`
-* **Mitigación:** `no cdp run` (Global) o `no cdp enable` (Por interfaz).
+El **CDP DoS Attack** explota la ausencia de autenticación en el protocolo **Cisco Discovery Protocol (CDP)** — un protocolo propietario de Capa 2 utilizado para el descubrimiento automático de dispositivos Cisco vecinos.
 
-### 2. ARP Man-in-the-Middle (`arp_mitm.py`)
-Ejecuta un envenenamiento de las cachés ARP (ARP Spoofing) entre un host víctima y su Gateway predeterminado, logrando interceptar el flujo de tráfico de red a través del reenvío IP local (IP Forwarding).
-* **Ejecución:** `sudo python3 arp_mitm.py <IP_Victima> <IP_Gateway>`
-* **Mitigación:** Implementación de Dynamic ARP Inspection (DAI).
-
-### 3. DHCP Spoofing (`dhcp_spoofing.py`)
-Despliega un servidor DHCP malicioso (Rogue Server) que escucha en múltiples subinterfaces virtuales (VLAN Trunking). Intercepta mensajes `DHCP Discover` y responde agresivamente con parámetros de red alterados, estableciendo al atacante como Default Gateway y servidor DNS.
-* **Ejecución:** `sudo python3 dhcp_spoofing.py`
-* **Mitigación:** Configuración de DHCP Snooping y declaración de puertos confiables (Trusted Ports).
-
-### 4. DHCP Starvation (`dhcp_starvation.py`)
-Ataque de denegación de servicio (DoS) que agota la totalidad del bloque de direcciones IP disponibles en el servidor DHCP legítimo. Utiliza subprocesamiento (Multi-threading) para enviar ráfagas de solicitudes con direcciones MAC de origen pseudoaleatorias.
-* **Ejecución:** `sudo python3 dhcp_starvation.py 2000`
-* **Mitigación:** Implementación de Port Security en las interfaces de acceso.
-
-### 5. MAC Flooding (`mac_flooding.py`)
-Inunda la memoria de contenido direccionable (CAM Table) del Switch inyectando miles de tramas de Capa 2 inválidas en cuestión de segundos. Fuerza al equipo a entrar en un estado de "Fail-Open", comportándose como un Hub pasivo y permitiendo el sniffing de tráfico Inter-VLAN.
-* **Ejecución:** `sudo python3 mac_flooding.py 5000`
-* **Mitigación:** `switchport port-security maximum <valor>` y configuración de acciones de violación restrictivas.
-
-### 6. STP Claim Root Attack (`stp_root.py`)
-Secuestra la jerarquía topológica del Spanning Tree Protocol (STP). El script inyecta BPDUs de Configuración falsificados con una prioridad absoluta de puente igual a cero (0x0000), obligando a la red a converger y establecer a la máquina atacante como el nuevo Root Bridge.
-* **Ejecución:** `sudo python3 stp_root.py 300`
-* **Mitigación:** Implementación conjunta de características de aseguramiento: `spanning-tree guard root` y `spanning-tree bpduguard enable`.
+Mediante la inyección masiva de tramas CDP falsificadas con direcciones MAC aleatorias y estructuras TLV válidas, se provoca el **desbordamiento de la tabla de vecinos CDP** del switch objetivo, degradando los recursos del plano de control y afectando la estabilidad operacional del dispositivo.
 
 ---
 
-## ⚙️ Requisitos del Sistema
-Para replicar estos scripts en un entorno de laboratorio controlado:
-* Entorno virtualizado (EVE-NG, PNETLab, o GNS3).
-* Sistema Operativo Linux (Ubuntu LTS recomendado).
-* Permisos de superusuario (root) para manipulación de Raw Sockets.
-* Instalación de dependencias: `sudo apt update && sudo apt install -y python3-scapy python3-pip net-tools`
+## 🗺️ Topología de Red
 
-> ⚠️ **Aviso de Responsabilidad:** El contenido de este repositorio ha sido desarrollado con fines única y estrictamente académicos y educativos. La ejecución de estas herramientas fuera de un entorno de laboratorio aislado, sin el consentimiento explícito de los administradores de la red, representa una violación a las políticas de seguridad informática.
+### 📊 Direccionamiento IP
+
+| Dispositivo | Interfaz | VLAN | Dirección IP | Rol |
+|:-----------:|:--------:|:----:|:------------:|:---:|
+| R1 | Eth0/0.10 | 10 | 10.7.25.1/24 | Gateway VLAN 10 |
+| R1 | Eth0/0.20 | 20 | 10.7.20.1/24 | Gateway VLAN 20 |
+| R1 | Eth0/0.99 | 99 | 10.7.99.1/24 | Gateway VLAN 99 |
+| SW1 | Eth0/0 | Trunk | — | Enlace a R1 |
+| SW1 | Eth0/1 | Trunk | — | Enlace a SW2 |
+| SW1 | Eth0/3 | 99 | — | Puerto Atacante |
+| Atacante | ens4 | 99 | 10.7.99.2/24 | Ubuntu + Scapy |
+| VPC1 | eth0 | 10 | DHCP | Usuario final |
+| VPC2 | eth0 | 20 | DHCP | Usuario final |
 
 ---
 
-## 📚 Referencias Bibliográficas y Recursos
+## ⚙️ Requisitos
 
-1. **Cisco Systems.** (n.d.). *Cisco Discovery Protocol Configuration Guide*. Documentación oficial de Cisco IOS.
-2. **Scapy Project.** (2024). *Scapy: Interactive packet manipulation program*. Obtenido de https://scapy.net/
-3. **IETF.** *RFC 1071: Computing the Internet Checksum*. Documentación del grupo de trabajo de ingeniería de Internet.
-4. **IETF.** *RFC 2131: Dynamic Host Configuration Protocol*. 
-5. **Reconocimiento Especial:** Fase de Troubleshooting analítico estructural, generación de scripts base y documentación técnica apoyada en Inteligencia Artificial.
+```bash
+# Sistema Operativo
+Ubuntu Linux (recomendado)
+
+# Dependencias
+sudo apt update && sudo apt install -y python3-scapy python3-pip
+
+# Privilegios requeridos
+sudo / root
+```
+
+---
+
+## 🚀 Uso
+
+```bash
+# Sintaxis
+sudo python3 cdp_dos.py [cantidad_paquetes]
+
+# Ejemplo — enviar 1000 paquetes
+sudo python3 cdp_dos.py 1000
+
+# Verificar impacto en SW1
+show cdp neighbors
+show cdp neighbors detail
+```
+
+---
+
+## 🔬 ¿Cómo funciona?
+
+| Paso | Descripción |
+|:----:|-------------|
+| 1️⃣ | Genera una MAC de origen aleatoria válida (unicast) |
+| 2️⃣ | Construye TLVs CDP: Device ID, Address, Port, Capabilities, Platform |
+| 3️⃣ | Calcula el checksum RFC 1071 para que IOS acepte el paquete |
+| 4️⃣ | Encapsula en trama IEEE 802.3 LLC/SNAP hacia `01:00:0c:cc:cc:cc` |
+| 5️⃣ | Envía masivamente saturando la tabla de vecinos CDP |
+
+---
+
+## 🛡️ Contramedidas
+
+### Deshabilitar CDP por interfaz (recomendado)
+```cisco
+SW1(config)# interface ethernet 0/3
+SW1(config-if)# no cdp enable
+SW1(config-if)# end
+SW1# write memory
+```
+
+### Deshabilitar CDP globalmente
+```cisco
+SW1(config)# no cdp run
+SW1(config)# end
+```
+
+### Hardening adicional
+- Implementar **Port Security** para limitar MACs por puerto
+- Migrar a **LLDP** con control de temporizadores
+- Apagar puertos sin uso con `shutdown`
+
+---
+
+## 📁 Archivos del Repositorio
+
+| Archivo | Descripción |
+|:-------:|-------------|
+| [`cdp_dos.py`](cdp_dos.py) | Script principal del ataque |
+| [`SaelGermanGarcia_2025-0725_Informe_P1.pdf`](SaelGermanGarcia_2025-0725_Informe_P1.pdf) | Documentación técnica completa |
+
+---
+
+## 🖼️ Capturas de Pantalla
+
+- 📸 [Incremento progresivo de paquetes](Capturas%20de%20pantalla%20CDP%20DoS/Incremento%20progresivo%20de%20los%20c....png)
+- 📸 [Tabla de Vecinos Saturada en SW1](Capturas%20de%20pantalla%20CDP%20DoS/Tabla%20de%20Vecinos%20Saturada%20.png)
+- 📸 [Topología de Red](Capturas%20de%20pantalla%20CDP%20DoS/Topologia.png)
+- 📸 [Contramedida Aplicada](Capturas%20de%20pantalla%20CDP%20DoS/contramedida.png)
+---
+
+## 📎 Recursos
+
+📄 **Documentación Técnica:** [Ver Informe PDF](SaelGermanGarcia_2025-0725_Informe_P1.pdf)  
+▶️ **Video Demostración:** [Ver en YouTube](https://youtube.com/playlist?list=PLV_dKVnYXf6dpmk3j8uXPHAZdbrkCQGAY)
+
+---
+
+## 📚 Referencias
+
+1. Cisco Systems. *Cisco Discovery Protocol Configuration Guide*. Documentación oficial de Cisco IOS.
+2. Scapy Project. *Scapy: Interactive packet manipulation program*. [https://scapy.net/](https://scapy.net/)
+3. IETF. *RFC 1071: Computing the Internet Checksum*. Base matemática implementada en el código para la validación de tramas.
+4. Reconocimiento especial: Troubleshooting y documentación apoyado en Inteligencia Artificial.
+
+---
+
+<div align="center">
+
+⚠️ **AVISO LEGAL** ⚠️  
+*Este script fue desarrollado exclusivamente con fines académicos y educativos.*  
+*Su uso en redes sin autorización explícita es ilegal y éticamente inaceptable.*
+
+</div>

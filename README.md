@@ -118,10 +118,11 @@ SW1(config)# end
 
 ## 🖼️ Capturas de Pantalla
 
-- 📸 [Incremento progresivo de paquetes](Capturas%20de%20pantalla%20CDP%20DoS/Incremento%20progresivo%20de%20los%20c....png)
+- 📸 [Incremento progresivo de paquetes](Capturas%20de%20pantalla%20CDP%20DoS/Incremento%20progresivo%20de%20los%20contradores%20de%20paquetes.png)
 - 📸 [Tabla de Vecinos Saturada en SW1](Capturas%20de%20pantalla%20CDP%20DoS/Tabla%20de%20Vecinos%20Saturada%20.png)
 - 📸 [Topología de Red](Capturas%20de%20pantalla%20CDP%20DoS/Topologia.png)
 - 📸 [Contramedida Aplicada](Capturas%20de%20pantalla%20CDP%20DoS/contramedida.png)
+  
 ---
 
 ## 📎 Recursos

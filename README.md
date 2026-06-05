@@ -1,4 +1,4 @@
-
+[gemini-code-1780644624886.md](https://github.com/user-attachments/files/28628742/gemini-code-1780644624886.md)
 # LABORATORIO DE ATAQUES DE CAPA 2: CDP DoS
 
 [cite_start]**Autor:** Sael Germán Garcia [cite: 100]  

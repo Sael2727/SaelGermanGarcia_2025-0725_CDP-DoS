@@ -119,7 +119,7 @@ SW1(config)# end
 | Archivo | Descripción |
 |:-------:|-------------|
 | [`cdp_dos.py`](cdp_dos.py) | Script principal del ataque |
-| [`SaelGermanGarcia_2025-0725_CDP_DoS_Informe_P1.pdf`](SaelGermanGarcia_2025-0725_CDP_DoS_Informe_P1.pdf) | Documentación técnica completa |
+| [`SaelGermanGarcia_2025-0725_CDP_DoS_P1.pdf`](SaelGermanGarcia_2025-0725_CDP_DoS_P1.pdf) | Documentación técnica completa |
 
 ---
 

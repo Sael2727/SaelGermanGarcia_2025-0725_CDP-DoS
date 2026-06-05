@@ -134,7 +134,7 @@ SW1(config)# end
 
 ## 📎 Recursos
 
-📄 **Documentación Técnica:** [Ver Informe PDF](SaelGermanGarcia_2025-0725_CDP_DoS_Informe_P1.pdf)  
+📄 **Documentación Técnica:** [Ver Informe PDF](SaelGermanGarcia_2025-0725_CDP_DoS_P1.pdf)  
 ▶️ **Video Demostración:** [Ver en YouTube](https://youtube.com/playlist?list=PLV_dKVnYXf6dpmk3j8uXPHAZdbrkCQGAY)
 
 ---

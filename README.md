@@ -17,27 +17,34 @@ Instituto Tecnológico de las Américas — ITLA | 2026
 
 ## 📋 Descripción del Ataque
 
-El **CDP DoS Attack** explota la ausencia de autenticación en el protocolo **Cisco Discovery Protocol (CDP)** — un protocolo propietario de Capa 2 utilizado para el descubrimiento automático de dispositivos Cisco vecinos.
-
-Mediante la inyección masiva de tramas CDP falsificadas con direcciones MAC aleatorias y estructuras TLV válidas, se provoca el **desbordamiento de la tabla de vecinos CDP** del switch objetivo, degradando los recursos del plano de control y afectando la estabilidad operacional del dispositivo.
+El **CDP DoS Attack** explota la ausencia de autenticación en el protocolo **Cisco Discovery Protocol (CDP)** — un protocolo propietario de Capa 2 utilizado para el descubrimiento automático de dispositivos Cisco vecinos. Mediante la inyección masiva de tramas CDP falsificadas con direcciones MAC aleatorias y estructuras TLV válidas, se provoca el **desbordamiento de la tabla de vecinos CDP** del switch objetivo, degradando los recursos del plano de control y afectando la estabilidad operacional del dispositivo.
 
 ---
 
 ## 🗺️ Topología de Red
 
-### 📊 Direccionamiento IP
+### 📊 Segmentación de VLANs
 
-| Dispositivo | Interfaz | VLAN | Dirección IP | Rol |
-|:-----------:|:--------:|:----:|:------------:|:---:|
-| R1 | Eth0/0.10 | 10 | 10.7.25.1/24 | Gateway VLAN 10 |
-| R1 | Eth0/0.20 | 20 | 10.7.20.1/24 | Gateway VLAN 20 |
-| R1 | Eth0/0.99 | 99 | 10.7.99.1/24 | Gateway VLAN 99 |
-| SW1 | Eth0/0 | Trunk | — | Enlace a R1 |
-| SW1 | Eth0/1 | Trunk | — | Enlace a SW2 |
-| SW1 | Eth0/3 | 99 | — | Puerto Atacante |
-| Atacante | ens4 | 99 | 10.7.99.2/24 | Ubuntu + Scapy |
-| VPC1 | eth0 | 10 | DHCP | Usuario final |
-| VPC2 | eth0 | 20 | DHCP | Usuario final |
+| VLAN ID | Nombre | Segmento IP | Descripción |
+|:-------:|:------:|:-----------:|-------------|
+| 10 | Usuarios | 10.7.25.0/24 | Usuarios finales legítimos (VPC1) |
+| 20 | Servidores | 10.7.20.0/24 | Zona de servidores locales (VPC2) |
+| 99 | Atacante | 10.7.99.0/24 | VLAN nativa — Máquina atacante Ubuntu |
+
+### 📊 Matriz de Direccionamiento IP
+
+| Dispositivo | Interfaz | VLAN | Dirección IP | Máscara | Detalle |
+|:-----------:|:--------:|:----:|:------------:|:-------:|---------|
+| R1 | Eth0/0.10 | 10 | 10.7.25.1 | /24 | Gateway VLAN 10 |
+| R1 | Eth0/0.20 | 20 | 10.7.20.1 | /24 | Gateway VLAN 20 |
+| R1 | Eth0/0.99 | 99 | 10.7.99.1 | /24 | Gateway VLAN 99 |
+| SW1 | Eth0/0 | Trunk | — | — | Enlace troncal hacia R1 |
+| SW1 | Eth0/1 | Trunk | — | — | Enlace troncal hacia SW2 |
+| SW1 | Eth0/3 | 99 | — | — | Puerto acceso Nodo Atacante |
+| SW2 | Eth0/1 | Trunk | — | — | Enlace troncal hacia SW1 |
+| SW2 | Eth0/0 | 10 | DHCP | /24 | VPC1 |
+| SW2 | Eth0/2 | 20 | DHCP | /24 | VPC2 |
+| Atacante | ens4 | 99 | 10.7.99.2 | /24 | Ubuntu + Scapy |
 
 ---
 
@@ -60,7 +67,7 @@ sudo / root
 
 ```bash
 # Sintaxis
-sudo python3 cdp_dos.py [cantidad_paquetes]
+sudo python3 cdp_dos.py [paquetes_a_enviar]
 
 # Ejemplo — enviar 1000 paquetes
 sudo python3 cdp_dos.py 1000
@@ -76,17 +83,17 @@ show cdp neighbors detail
 
 | Paso | Descripción |
 |:----:|-------------|
-| 1️⃣ | Genera una MAC de origen aleatoria válida (unicast) |
-| 2️⃣ | Construye TLVs CDP: Device ID, Address, Port, Capabilities, Platform |
-| 3️⃣ | Calcula el checksum RFC 1071 para que IOS acepte el paquete |
+| 1️⃣ | `random_mac()` — Genera MACs unicast aleatorias válidas aplicando máscara `& 0xFC` al primer octeto |
+| 2️⃣ | `cdp_checksum()` — Calcula el checksum RFC 1071 para que IOS acepte el paquete como válido |
+| 3️⃣ | `build_cdp_packet()` — Construye TLVs CDP: Device ID, Version, Platform, Address, Port, Capabilities, VLAN |
 | 4️⃣ | Encapsula en trama IEEE 802.3 LLC/SNAP hacia `01:00:0c:cc:cc:cc` |
-| 5️⃣ | Envía masivamente saturando la tabla de vecinos CDP |
+| 5️⃣ | `cdp_flood()` — Envía masivamente saturando la tabla de vecinos CDP del switch |
 
 ---
 
 ## 🛡️ Contramedidas
 
-### Deshabilitar CDP por interfaz (recomendado)
+### Desactivación por interfaz específica (recomendado)
 ```cisco
 SW1(config)# interface ethernet 0/3
 SW1(config-if)# no cdp enable
@@ -94,16 +101,16 @@ SW1(config-if)# end
 SW1# write memory
 ```
 
-### Deshabilitar CDP globalmente
+### Desactivación global de CDP
 ```cisco
 SW1(config)# no cdp run
 SW1(config)# end
 ```
 
-### Hardening adicional
+### Recomendaciones de Hardening adicionales
+- Migrar a **LLDP (IEEE 802.1AB)** con control de temporizadores
 - Implementar **Port Security** para limitar MACs por puerto
-- Migrar a **LLDP** con control de temporizadores
-- Apagar puertos sin uso con `shutdown`
+- Asignar VLANs nativas distintas de VLAN 1 y apagar puertos sin uso
 
 ---
 
@@ -112,7 +119,7 @@ SW1(config)# end
 | Archivo | Descripción |
 |:-------:|-------------|
 | [`cdp_dos.py`](cdp_dos.py) | Script principal del ataque |
-| [`SaelGermanGarcia_2025-0725_Informe_P1.pdf`](SaelGermanGarcia_2025-0725_Informe_P1.pdf) | Documentación técnica completa |
+| [`SaelGermanGarcia_2025-0725_CDP_DoS_Informe_P1.pdf`](SaelGermanGarcia_2025-0725_CDP_DoS_Informe_P1.pdf) | Documentación técnica completa |
 
 ---
 
@@ -122,12 +129,12 @@ SW1(config)# end
 - 📸 [Tabla de Vecinos Saturada en SW1](Capturas%20de%20pantalla%20CDP%20DoS/Tabla%20de%20Vecinos%20Saturada%20.png)
 - 📸 [Topología de Red](Capturas%20de%20pantalla%20CDP%20DoS/Topologia.png)
 - 📸 [Contramedida Aplicada](Capturas%20de%20pantalla%20CDP%20DoS/contramedida.png)
-  
+
 ---
 
 ## 📎 Recursos
 
-📄 **Documentación Técnica:** [Ver Informe PDF](SaelGermanGarcia_2025-0725_Informe_P1.pdf)  
+📄 **Documentación Técnica:** [Ver Informe PDF](SaelGermanGarcia_2025-0725_CDP_DoS_Informe_P1.pdf)  
 ▶️ **Video Demostración:** [Ver en YouTube](https://youtube.com/playlist?list=PLV_dKVnYXf6dpmk3j8uXPHAZdbrkCQGAY)
 
 ---
@@ -136,8 +143,8 @@ SW1(config)# end
 
 1. Cisco Systems. *Cisco Discovery Protocol Configuration Guide*. Documentación oficial de Cisco IOS.
 2. Scapy Project. *Scapy: Interactive packet manipulation program*. [https://scapy.net/](https://scapy.net/)
-3. IETF. *RFC 1071: Computing the Internet Checksum*. Base matemática implementada en el código para la validación de tramas.
-4. Reconocimiento especial: Troubleshooting y documentación apoyado en Inteligencia Artificial.
+3. IETF. *RFC 1071: Computing the Internet Checksum*. Base matemática implementada en el código.
+4. Reconocimiento especial: Troubleshooting, base del script y documentación apoyado en Inteligencia Artificial.
 
 ---
 
